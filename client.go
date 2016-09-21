@@ -99,8 +99,8 @@ type client struct {
 	ipv4UnicastConn *net.UDPConn
 	ipv6UnicastConn *net.UDPConn
 
-	ipv4MulticastConn *net.UDPConn
-	ipv6MulticastConn *net.UDPConn
+	//ipv4MulticastConn *net.UDPConn
+	//ipv6MulticastConn *net.UDPConn
 
 	closed    bool
 	closedCh  chan struct{} // TODO(reddaly): This doesn't appear to be used.
@@ -125,25 +125,25 @@ func newClient() (*client, error) {
 		return nil, fmt.Errorf("failed to bind to any unicast udp port")
 	}
 
-	mconn4, err := net.ListenMulticastUDP("udp4", nil, ipv4Addr)
-	if err != nil {
-		log.Printf("[ERR] mdns: Failed to bind to udp4 port: %v", err)
-	}
-	mconn6, err := net.ListenMulticastUDP("udp6", nil, ipv6Addr)
-	if err != nil {
-		log.Printf("[ERR] mdns: Failed to bind to udp6 port: %v", err)
-	}
+	//mconn4, err := net.ListenMulticastUDP("udp4", nil, ipv4Addr)
+	//if err != nil {
+	//	log.Printf("[ERR] mdns: Failed to bind to udp4 port: %v", err)
+	//}
+	//mconn6, err := net.ListenMulticastUDP("udp6", nil, ipv6Addr)
+	//if err != nil {
+	//	log.Printf("[ERR] mdns: Failed to bind to udp6 port: %v", err)
+	//}
 
-	if mconn4 == nil && mconn6 == nil {
-		return nil, fmt.Errorf("failed to bind to any multicast udp port")
-	}
+	//if mconn4 == nil && mconn6 == nil {
+	//	return nil, fmt.Errorf("failed to bind to any multicast udp port")
+	//}
 
 	c := &client{
-		ipv4MulticastConn: mconn4,
-		ipv6MulticastConn: mconn6,
-		ipv4UnicastConn:   uconn4,
-		ipv6UnicastConn:   uconn6,
-		closedCh:          make(chan struct{}),
+		//ipv4MulticastConn: mconn4,
+		//ipv6MulticastConn: mconn6,
+		ipv4UnicastConn: uconn4,
+		ipv6UnicastConn: uconn6,
+		closedCh:        make(chan struct{}),
 	}
 	return c, nil
 }
@@ -167,12 +167,12 @@ func (c *client) Close() error {
 	if c.ipv6UnicastConn != nil {
 		c.ipv6UnicastConn.Close()
 	}
-	if c.ipv4MulticastConn != nil {
-		c.ipv4MulticastConn.Close()
-	}
-	if c.ipv6MulticastConn != nil {
-		c.ipv6MulticastConn.Close()
-	}
+	//if c.ipv4MulticastConn != nil {
+	//	c.ipv4MulticastConn.Close()
+	//}
+	//if c.ipv6MulticastConn != nil {
+	//	c.ipv6MulticastConn.Close()
+	//}
 
 	return nil
 }
@@ -188,14 +188,14 @@ func (c *client) setInterface(iface *net.Interface) error {
 	if err := p2.SetMulticastInterface(iface); err != nil {
 		return err
 	}
-	p = ipv4.NewPacketConn(c.ipv4MulticastConn)
-	if err := p.SetMulticastInterface(iface); err != nil {
-		return err
-	}
-	p2 = ipv6.NewPacketConn(c.ipv6MulticastConn)
-	if err := p2.SetMulticastInterface(iface); err != nil {
-		return err
-	}
+	//p = ipv4.NewPacketConn(c.ipv4MulticastConn)
+	//if err := p.SetMulticastInterface(iface); err != nil {
+	//	return err
+	//}
+	//p2 = ipv6.NewPacketConn(c.ipv6MulticastConn)
+	//if err := p2.SetMulticastInterface(iface); err != nil {
+	//	return err
+	//}
 	return nil
 }
 
@@ -208,8 +208,8 @@ func (c *client) query(params *QueryParam) error {
 	msgCh := make(chan *dns.Msg, 32)
 	go c.recv(c.ipv4UnicastConn, msgCh)
 	go c.recv(c.ipv6UnicastConn, msgCh)
-	go c.recv(c.ipv4MulticastConn, msgCh)
-	go c.recv(c.ipv6MulticastConn, msgCh)
+	//go c.recv(c.ipv4MulticastConn, msgCh)
+	//go c.recv(c.ipv6MulticastConn, msgCh)
 
 	// Send the query
 	m := new(dns.Msg)
@@ -327,7 +327,7 @@ func (c *client) recv(l *net.UDPConn, msgCh chan *dns.Msg) {
 	}
 	buf := make([]byte, 65536)
 	for !c.closed {
-		n, err := l.Read(buf)
+		n, _, err := l.ReadFrom(buf)
 		if err != nil {
 			log.Printf("[ERR] mdns: Failed to read packet: %v", err)
 			continue
@@ -339,6 +339,7 @@ func (c *client) recv(l *net.UDPConn, msgCh chan *dns.Msg) {
 		}
 		select {
 		case msgCh <- msg:
+			log.Printf("Send message on msg channel\n")
 		case <-c.closedCh:
 			return
 		}

@@ -55,7 +55,10 @@ type Server struct {
 // NewServer is used to create a new mDNS server from a config
 func NewServer(config *Config) (*Server, error) {
 	// Create the listeners
-	ipv4List, _ := net.ListenMulticastUDP("udp4", config.Iface, ipv4Addr)
+	ipv4List, err := net.ListenMulticastUDP("udp4", config.Iface, ipv4Addr)
+	if err != nil {
+		panic(err)
+	}
 	ipv6List, _ := net.ListenMulticastUDP("udp6", config.Iface, ipv6Addr)
 
 	// Check if we have any listener
@@ -221,7 +224,7 @@ func (s *Server) handleQuery(query *dns.Msg, from net.Addr) error {
 		for i, q := range query.Question {
 			questions[i] = q.Name
 		}
-		log.Printf("no responses for query with questions: %s", strings.Join(questions, ", "))
+		fmt.Printf("no responses for query with questions: %s", strings.Join(questions, ", "))
 	}
 
 	if mresp := resp(false); mresp != nil {

@@ -14,7 +14,7 @@ const (
 	ipv4mdns              = "224.0.0.251"
 	ipv6mdns              = "ff02::fb"
 	mdnsPort              = 5353
-	forceUnicastResponses = false
+	forceUnicastResponses = true
 )
 
 var (
